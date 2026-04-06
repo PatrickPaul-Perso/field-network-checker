@@ -1,0 +1,7 @@
+---
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - tree
+    state: present
+    update_cache: true

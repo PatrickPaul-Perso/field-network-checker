@@ -1,0 +1,8 @@
+- name: Build Field Network Checker locally
+  hosts: local
+  become: true
+  roles:
+    - base
+    - docker
+    - network_ap
+    - app
