@@ -1,0 +1,12 @@
+---
+- name: bring up FNC access point
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - connection
+      - up
+      - id
+      - "{{ netprobe_ap_conn_name }}"
+      - ifname
+      - "{{ netprobe_ap_ifname }}"
+  changed_when: true

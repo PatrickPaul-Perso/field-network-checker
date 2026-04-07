@@ -1,0 +1,6 @@
+netprobe_ap_conn_name: fnc-ap
+netprobe_ap_ifname: wlan0
+netprobe_ap_ssid_prefix: FNC
+netprobe_ap_psk: FNC-demo-2026
+netprobe_ap_address: 192.168.50.1/24
+netprobe_ap_band: bg

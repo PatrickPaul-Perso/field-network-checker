@@ -1,2 +1,102 @@
+# ansible/roles/network_ap/tasks/main.yml
 ---
-# tasks will be added here
+- name: Install packages required for AP mode
+  ansible.builtin.apt:
+    name:
+      - network-manager
+      - dnsmasq-base
+    state: present
+    update_cache: true
+
+- name: Ensure NetworkManager is enabled and started
+  ansible.builtin.systemd_service:
+    name: NetworkManager
+    enabled: true
+    state: started
+
+- name: Read wlan0 MAC address
+  ansible.builtin.command:
+    argv:
+      - cat
+      - "/sys/class/net/{{ netprobe_ap_ifname }}/address"
+  register: netprobe_wlan_mac
+  changed_when: false
+
+- name: Build SSID from prefix and wlan MAC
+  ansible.builtin.set_fact:
+    netprobe_ap_ssid: "{{ netprobe_ap_ssid_prefix }}-{{ netprobe_wlan_mac.stdout | lower | replace(':', '') }}"
+
+- name: Check whether the AP connection exists
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - connection
+      - show
+      - "{{ netprobe_ap_conn_name }}"
+  register: netprobe_ap_connection_check
+  changed_when: false
+  failed_when: false
+
+- name: Create hotspot profile if missing
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - device
+      - wifi
+      - hotspot
+      - ifname
+      - "{{ netprobe_ap_ifname }}"
+      - con-name
+      - "{{ netprobe_ap_conn_name }}"
+      - ssid
+      - "{{ netprobe_ap_ssid }}"
+      - password
+      - "{{ netprobe_ap_psk }}"
+  when: netprobe_ap_connection_check.rc != 0
+  changed_when: true
+
+- name: Apply hotspot connection settings
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - connection
+      - modify
+      - "{{ netprobe_ap_conn_name }}"
+      - connection.autoconnect
+      - "yes"
+      - 802-11-wireless.mode
+      - ap
+      - 802-11-wireless.band
+      - "{{ netprobe_ap_band }}"
+      - 802-11-wireless.ssid
+      - "{{ netprobe_ap_ssid }}"
+      - ipv4.method
+      - shared
+      - ipv4.addresses
+      - "{{ netprobe_ap_address }}"
+      - ipv6.method
+      - disabled
+  changed_when: true
+  notify:
+    - bring up FNC access point
+
+- name: Apply hotspot security settings
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - connection
+      - modify
+      - "{{ netprobe_ap_conn_name }}"
+      - 802-11-wireless-security.key-mgmt
+      - wpa-psk
+      - 802-11-wireless-security.psk
+      - "{{ netprobe_ap_psk }}"
+      - 802-11-wireless-security.psk-flags
+      - "0"
+  no_log: true
+  changed_when: true
+  notify:
+    - bring up FNC access point
+
+- name: Apply AP changes immediately
+  ansible.builtin.meta: flush_handlers

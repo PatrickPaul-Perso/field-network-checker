@@ -59,13 +59,40 @@ Example login form:
 
 ### 4. Installed the minimum host packages
 
-The first host packages installed were:
+## Manual prerequisite before running Ansible
 
-- `git`
-- `ansible`
-- `ca-certificates`
-- `curl`
-- `tree`
+Set the Wi-Fi regulatory country on the Raspberry Pi host.
+
+```bash
+sudo raspi-config nonint do_wifi_country CA
+sudo reboot
+```
+
+After reboot the first host packages installed were:
+
+```bash
+sudo apt update
+sudo apt upgrade
+sudo apt install -y git ansible ca-certificates curl tree
+sudo apt remove -y docker.io docker-compose docker-doc podman-docker containerd runc || true
+
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
 
 These provide the minimum support needed to:
 
