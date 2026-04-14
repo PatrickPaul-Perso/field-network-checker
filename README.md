@@ -28,16 +28,16 @@ The tool is designed for field work. It stays useful even before any central sys
 ## Interface preview
 
 ### Link down
-![Link down state](docs/assets/images/link_down.JPG)
+<img src="docs/assets/images/link_down.JPG" alt="Link down" width="320">
 
 ### Link up, no IP yet
-![Link up with no IP](docs/assets/images/link_up_no_ip.JPG)
+<img src="docs/assets/images/link_up_no_ip.JPG" alt="Link up no IP" width="320">
 
 ### Link up, non-target network
-![Link up on private IP](docs/assets/images/link_up_private_ip.JPG)
+<img src="docs/assets/images/link_up_no_private_ip.JPG" alt="Link up private IP" width="320">
 
 ### Link up, target legacy network
-![Link up on legacy IP](docs/assets/images/link_up_legacy_ip.JPG)
+<img src="docs/assets/images/link_up_legacy_ip.JPG" alt="Link up on legacy IP" width="320">
 
 ## Public project page
 
