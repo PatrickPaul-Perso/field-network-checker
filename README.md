@@ -45,7 +45,7 @@ The tool is designed for field work. It stays useful even before any central sys
 
 ## Public project page
 
-See the project site in the `docs/` folder once GitHub Pages is enabled.
+[Open the Field Network Checker project page](https://patrickpaul-perso.github.io/field-network-checker/)
 
 ## Status
 
