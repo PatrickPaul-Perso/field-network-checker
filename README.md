@@ -38,7 +38,7 @@ The tool is designed for field work. It stays useful even before any central sys
 <img src="docs/assets/images/link_up_no_ip.JPG" alt="Link up no IP" width="320">
 
 ### Link up, non-target network
-<img src="docs/assets/images/link_up_no_private_ip.JPG" alt="Link up private IP" width="320">
+<img src="docs/assets/images/link_up_private_ip.JPG" alt="Link up private IP" width="320">
 
 ### Link up, target legacy network
 <img src="docs/assets/images/link_up_legacy_ip.JPG" alt="Link up on legacy IP" width="320">
