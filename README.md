@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/images/IMG_3571.jpg" alt="Field Network Checker prototype" width="360">
+</p>
+
 # Field Network Checker
 
 Field Network Checker is a local-first tool for validating unknown Ethernet ports in the field and capturing port metadata at the time of testing.
