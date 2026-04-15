@@ -1,2 +1,63 @@
 ---
-# tasks will be added here
+- name: Check and remove old Docker packages from Debian repos
+  shell: |
+    for pkg in docker.io docker-compose docker-doc podman-docker containerd runc; do
+      if dpkg -l | grep -q "^ii  $pkg "; then
+        origin=$(apt-cache policy $pkg | grep -A1 "Installed:" | tail -1 | awk '{print $2}')
+        if [[ $origin == *"debian.org"* ]] || [[ $origin == *"raspbian.org"* ]]; then
+          apt remove -y $pkg
+        fi
+      fi
+    done
+  args:
+    executable: /bin/bash
+  become: true
+
+- name: Create apt keyrings directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Docker GPG key
+  get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Update apt cache
+  apt:
+    update_cache: true
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Start and enable Docker service
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add bootstrap user to docker group
+  user:
+    name: "{{ fnc_user | default('fnc') }}"
+    groups: docker
+    append: true
+    state: present
+
+- name: Note about docker group membership for bootstrap user
+  debug:
+    msg: "User {{ fnc_user | default('fnc') }} added to docker group. You may need to log out and back in for group membership to take effect, or run 'newgrp docker' in a new shell."

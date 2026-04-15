@@ -37,7 +37,7 @@ Configured during imaging:
 - SSH: enabled
 - Wi-Fi client settings: left blank
 
-This kept the first boot simple and avoided preconfiguring network behavior that will later be managed by the project itself.
+The `fnc` username is a required bootstrap convention for this project. It keeps first boot simple, avoids preconfiguring network behavior that will later be managed by the project itself, and lets the local Ansible playbooks assume a stable non-root account exists for post-install host setup.
 
 ### 2. Booted the Raspberry Pi on a normal Ethernet network
 
@@ -74,25 +74,9 @@ After reboot the first host packages installed were:
 sudo apt update
 sudo apt upgrade
 sudo apt install -y git ansible ca-certificates curl tree
-sudo apt remove -y docker.io docker-compose docker-doc podman-docker containerd runc || true
-
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-sudo tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
-Types: deb
-URIs: https://download.docker.com/linux/debian
-Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
-Components: stable
-Architectures: $(dpkg --print-architecture)
-Signed-By: /etc/apt/keyrings/docker.asc
-EOF
-
-sudo apt update
-
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
+
+This setup assumes the OS image was installed with a local user account named `fnc`. That account is the expected first-login and automation user for Milestone 1, and the Ansible configuration uses it by default when applying host-level changes such as Docker group membership.
 
 These provide the minimum support needed to:
 
@@ -101,21 +85,20 @@ These provide the minimum support needed to:
 - add external package repositories safely
 - inspect the project directory structure during setup
 
-### 5. Installed Docker Engine from the official Docker repository
+### 5. Ran Ansible base and docker roles
 
-The host was prepared for containerized application deployment using Docker Engine and the Docker Compose plugin.
+With Ansible installed, run the base and docker roles to install Docker and add the `fnc` user to the `docker` group:
 
-Installed components:
+```bash
+cd field-network-checker
+ansible-playbook ansible/site.yml --tags base,docker
+```
 
-- `docker-ce`
-- `docker-ce-cli`
-- `containerd.io`
-- `docker-buildx-plugin`
-- `docker-compose-plugin`
-
-This gives the project a lightweight and reproducible application runtime while keeping host responsibilities limited.
+This automates the Docker installation from the official repository and the expected `fnc` user setup.
 
 ### 6. Validated Docker installation
+
+A basic Docker validation was performed using the `hello-world` image.
 
 A basic Docker validation was performed using the `hello-world` image.
 
@@ -123,31 +106,7 @@ After confirming that Docker worked correctly, the temporary validation image an
 
 ### 7. Created the local project structure
 
-A self-contained project root was created under:
-
-    /opt/field-network-checker
-
-The initial folder structure includes:
-
-    /opt/field-network-checker/
-    ├── ansible/
-    │   ├── inventory/
-    │   ├── group_vars/
-    │   └── roles/
-    │       ├── base/
-    │       │   └── tasks/
-    │       ├── docker/
-    │       │   └── tasks/
-    │       ├── network_ap/
-    │       │   └── tasks/
-    │       └── app/
-    │           └── tasks/
-    ├── app/
-    │   └── src/
-    ├── bootstrap/
-    ├── deploy/
-    ├── docs/
-    └── images/
+A self-contained project root was created under `/opt/field-network-checker`.
 
 This structure is designed to keep the solution self-contained and portfolio-friendly.
 

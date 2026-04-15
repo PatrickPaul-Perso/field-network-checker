@@ -2,7 +2,11 @@
   hosts: local
   become: true
   roles:
-    - base
-    - docker
-    - network_ap
-    - app
+    - role: base
+      tags: base
+    - role: docker
+      tags: docker
+    - role: network_ap
+      tags: network_ap
+    - role: app
+      tags: app

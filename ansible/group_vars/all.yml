@@ -1,3 +1,5 @@
+fnc_user: fnc
+
 netprobe_ap_conn_name: fnc-ap
 netprobe_ap_ifname: wlan0
 netprobe_ap_ssid_prefix: FNC
