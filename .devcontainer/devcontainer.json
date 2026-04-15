@@ -9,6 +9,10 @@
   "service": "fnc-dev",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
+  "runArgs": [
+    "--security-opt=seccomp=unconfined",
+    "--security-opt=apparmor=unconfined"
+  ],
   "mounts": [
     "source=${localEnv:SSH_AUTH_SOCK},target=${localEnv:SSH_AUTH_SOCK},type=bind"
   ],
@@ -22,7 +26,8 @@
         "ms-python.python",
         "ms-python.pylint",
         "ms-python.black-formatter",
-        "ms-python.isort"
+        "ms-python.isort",
+        "openai.chatgpt"
       ]
     }
   }
