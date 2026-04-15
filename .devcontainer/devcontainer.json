@@ -1,0 +1,23 @@
+{
+  "name": "Field Network Checker Dev (Docker)",
+  "dockerPath": "/usr/bin/docker",
+  "dockerComposePath": "docker compose",
+  "dockerComposeFile": [
+    "../deploy/compose.yaml",
+    "docker-compose.dev.yaml"
+  ],
+  "service": "fnc-dev",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "pip install -r app/requirements.txt",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylint",
+        "ms-python.black-formatter",
+        "ms-python.isort"
+      ]
+    }
+  }
+}

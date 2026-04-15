@@ -1,0 +1,16 @@
+services:
+  fnc-dev:
+    build:
+      context: ../app
+      dockerfile: Dockerfile
+    container_name: fnc-dev
+    command: sleep infinity
+    working_dir: /workspaces/field-network-checker
+    volumes:
+      - ..:/workspaces/field-network-checker:cached
+    environment:
+      - PYTHONPATH=/workspaces/field-network-checker/app/src
+    depends_on:
+      - fnc-app
+    networks:
+      - default

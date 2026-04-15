@@ -18,3 +18,7 @@ services:
     volumes:
       - /opt/field-network-checker/data:/data
       - /opt/field-network-checker/config:/config
+
+networks:
+  default:
+    driver: bridge

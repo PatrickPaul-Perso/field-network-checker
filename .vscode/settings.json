@@ -1,0 +1,5 @@
+{
+  "dev.containers.dockerPath": "/usr/bin/docker",
+  "dev.containers.dockerComposePath": "docker compose",
+  "dev.containers.executeInWSL": false
+}

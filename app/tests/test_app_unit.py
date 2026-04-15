@@ -1,7 +1,10 @@
 import pytest
 from pathlib import Path
+import app as app_module
 import json
+import subprocess
 import tempfile
+import sys
 from unittest.mock import patch, mock_open
 
 from app import (
@@ -18,19 +21,19 @@ def client():
 
 
 @pytest.fixture
-def temp_dirs(tmp_path):
-    global DATA_DIR, CONFIG_DIR, RECORDS_PATH, CONFIG_PATH
-    original_data = DATA_DIR
-    original_config = CONFIG_DIR
-    DATA_DIR = tmp_path / "data"
-    CONFIG_DIR = tmp_path / "config"
-    RECORDS_PATH = DATA_DIR / "records.jsonl"
-    CONFIG_PATH = CONFIG_DIR / "config.json"
-    yield
-    DATA_DIR = original_data
-    CONFIG_DIR = original_config
-    RECORDS_PATH = original_data / "records.jsonl"
-    CONFIG_PATH = original_config / "config.json"
+def temp_dirs(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    config_dir = tmp_path / "config"
+    monkeypatch.setattr(app_module, "DATA_DIR", data_dir)
+    monkeypatch.setattr(app_module, "CONFIG_DIR", config_dir)
+    monkeypatch.setattr(app_module, "RECORDS_PATH", data_dir / "records.jsonl")
+    monkeypatch.setattr(app_module, "CONFIG_PATH", config_dir / "config.json")
+    module = sys.modules[__name__]
+    monkeypatch.setattr(module, "DATA_DIR", data_dir)
+    monkeypatch.setattr(module, "CONFIG_DIR", config_dir)
+    monkeypatch.setattr(module, "RECORDS_PATH", data_dir / "records.jsonl")
+    monkeypatch.setattr(module, "CONFIG_PATH", config_dir / "config.json")
+    return
 
 
 def test_load_config_defaults(temp_dirs):
