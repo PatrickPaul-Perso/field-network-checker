@@ -9,6 +9,12 @@
   "service": "fnc-dev",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
+  "mounts": [
+    "source=${localEnv:SSH_AUTH_SOCK},target=${localEnv:SSH_AUTH_SOCK},type=bind"
+  ],
+  "remoteEnv": {
+    "SSH_AUTH_SOCK": "${localEnv:SSH_AUTH_SOCK}"
+  },
   "postCreateCommand": "pip install -r app/requirements.txt",
   "customizations": {
     "vscode": {
