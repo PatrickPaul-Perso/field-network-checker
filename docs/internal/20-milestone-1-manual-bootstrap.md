@@ -100,8 +100,6 @@ This automates the Docker installation from the official repository and the expe
 
 A basic Docker validation was performed using the `hello-world` image.
 
-A basic Docker validation was performed using the `hello-world` image.
-
 After confirming that Docker worked correctly, the temporary validation image and container were removed. This kept the host tidy and avoided leaving non-project runtime artifacts behind.
 
 ### 7. Created the local project structure
@@ -129,7 +127,7 @@ A top-level Ansible playbook was created to organize the project into clear func
 - `network_ap`
 - `app`
 
-At this stage, the `base` role contains the first actual task, which installs `tree` using an Ansible package list with a single element.
+At this stage, the `base` role contained the first actual task, which installed `tree` using an Ansible package list with a single element.
 
 ## Architecture at the End of Milestone 1
 
@@ -149,7 +147,6 @@ flowchart TD
     I --> L[app]
     I --> M[deploy]
     I --> N[bootstrap]
-    I --> O[images]
 
     K --> P[localhost inventory]
     K --> Q[site.yml]
@@ -176,32 +173,9 @@ The host currently owns only the minimum required responsibilities:
 
 This remains aligned with the design goal of keeping the host minimal while moving most project logic into containers later.
 
-## What Is Not Done Yet
-
-The following items are still out of scope for this milestone:
-
-- configuring `wlan0` as a local access point
-- defining the host network profile for offline field use
-- creating the containerized web application
-- reading link and IP state from the field interface
-- writing `records.jsonl`
-- exporting CSV from JSONL
-- adding an admin page
-- archiving and reset actions
-
-## Next Step
-
-The next logical step is to continue with the Ansible roles in this order:
-
-1. `base`
-2. `docker`
-3. `network_ap`
-4. `app`
-
-The immediate technical target is to move from a manually bootstrapped host to a reproducible local Ansible run that configures the remaining platform components.
 
 ## Notes
 
 This milestone is intentionally simple.
 
-The objective was not to build a finished product, but to establish a clean, reproducible base for the first working proof of concept.
+The objective at this stage was not to build a finished product, but to establish a clean, reproducible base for the first working proof of concept.
