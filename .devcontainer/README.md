@@ -24,9 +24,17 @@ Once in the dev container:
 
 ## Architecture
 
-- `fnc-app`: Production application container
-- `fnc-dev`: Development container with full workspace access
-- Both containers run simultaneously for testing integration
+```mermaid
+graph TD
+  A[fnc-dev] -->|depends on| B[fnc-app]
+  B -->|serves Flask app on 192.168.50.1:8080| A
+  A -->|workspace mounted| C[Host project files]
+  B -->|data/config volumes| D[Host data/config]
+```
+
+- `fnc-app`: production application container that runs the Flask service
+- `fnc-dev`: development container with full workspace access and the VS Code attached environment
+- Both containers are launched together so the dev container can use the app container as its dependency
 
 ## Requirements
 
