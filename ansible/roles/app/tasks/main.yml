@@ -1,2 +1,52 @@
 ---
-# tasks will be added here
+- name: Ensure app runtime directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ fnc_data_dir }}"
+    - "{{ fnc_config_dir }}"
+
+- name: Check whether app default config already exists
+  ansible.builtin.stat:
+    path: "{{ fnc_config_dir }}/config.json"
+  register: fnc_app_config
+
+- name: Seed default app config when missing
+  ansible.builtin.copy:
+    src: "{{ fnc_default_config_src }}"
+    dest: "{{ fnc_config_dir }}/config.json"
+    remote_src: true
+    mode: "0644"
+  when: not fnc_app_config.stat.exists
+
+- name: Verify app compose file exists
+  ansible.builtin.stat:
+    path: "{{ fnc_compose_file }}"
+  register: fnc_compose
+
+- name: Fail when app compose file is missing
+  ansible.builtin.fail:
+    msg: "Expected Docker Compose file at {{ fnc_compose_file }}."
+  when: not fnc_compose.stat.exists
+
+- name: Build and start Field Network Checker app
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ fnc_compose_file }}"
+      - up
+      - -d
+      - --build
+      - fnc-app
+    chdir: "{{ fnc_project_root }}"
+  register: fnc_app_compose_up
+  changed_when: >
+    'Creating' in fnc_app_compose_up.stdout or
+    'Recreating' in fnc_app_compose_up.stdout or
+    'Starting' in fnc_app_compose_up.stdout or
+    'Building' in fnc_app_compose_up.stdout or
+    'Pulling' in fnc_app_compose_up.stdout

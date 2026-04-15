@@ -1,4 +1,9 @@
 fnc_user: fnc
+fnc_project_root: "{{ playbook_dir | dirname }}"
+fnc_compose_file: "{{ fnc_project_root }}/deploy/compose.yaml"
+fnc_data_dir: "{{ fnc_project_root }}/data"
+fnc_config_dir: "{{ fnc_project_root }}/config"
+fnc_default_config_src: "{{ fnc_project_root }}/config/config.json"
 
 netprobe_ap_conn_name: fnc-ap
 netprobe_ap_ifname: wlan0
