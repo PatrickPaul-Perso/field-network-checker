@@ -19,6 +19,7 @@ from app import (
     ensure_dirs,
     get_ipv4,
     link_up,
+    live_status_snapshot,
     load_config,
     next_test_id,
 )
@@ -84,6 +85,21 @@ def test_get_ipv4_success(temp_dirs):
 def test_get_ipv4_no_ip(temp_dirs):
     with patch("subprocess.check_output", side_effect=subprocess.CalledProcessError(1, "ip")):
         assert get_ipv4("eth0") == ""
+
+
+def test_get_ipv4_command_failure_returns_empty_string(temp_dirs):
+    with patch("subprocess.check_output", side_effect=FileNotFoundError):
+        assert get_ipv4("eth0") == ""
+
+
+def test_live_status_snapshot_handles_link_read_failure(temp_dirs):
+    with patch("pathlib.Path.exists", return_value=True),          patch("pathlib.Path.read_text", side_effect=OSError),          patch("app.get_ipv4") as get_ipv4_mock:
+        status = live_status_snapshot()
+
+    assert status["eth_link"] is False
+    assert status["ip"] == ""
+    assert status["is_legacy"] is False
+    get_ipv4_mock.assert_not_called()
 
 
 def test_next_test_id_empty(temp_dirs):

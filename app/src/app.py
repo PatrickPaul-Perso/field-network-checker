@@ -609,9 +609,12 @@ def load_config() -> dict:
 
 def link_up(ifname: str) -> bool:
     carrier = Path(f"/sys/class/net/{ifname}/carrier")
-    if not carrier.exists():
+    try:
+        if not carrier.exists():
+            return False
+        return carrier.read_text(encoding="utf-8").strip() == "1"
+    except OSError:
         return False
-    return carrier.read_text(encoding="utf-8").strip() == "1"
 
 def get_ipv4(ifname: str) -> str:
     try:
@@ -619,7 +622,7 @@ def get_ipv4(ifname: str) -> str:
             ["ip", "-4", "-o", "addr", "show", "dev", ifname],
             text=True
         )
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, OSError):
         return ""
 
     for line in output.splitlines():
