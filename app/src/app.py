@@ -469,7 +469,7 @@ PAGE = """
 
         const linkUp = data.eth_link === true;
         const ip = data.ip || "";
-        const ipMatch = ip.startsWith("132.246.");
+        const ipMatch = data.is_legacy === true;
 
         const card = document.getElementById("live-status-card");
         const dot = document.getElementById("status-dot");

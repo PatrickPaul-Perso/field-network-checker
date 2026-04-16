@@ -111,6 +111,13 @@ def test_api_status_no_link(client, temp_dirs):
         assert data["ip"] == ""
 
 
+def test_index_uses_backend_is_legacy_flag(client, temp_dirs):
+    response = client.get("/")
+    page = response.get_data(as_text=True)
+    assert "const ipMatch = data.is_legacy === true;" in page
+    assert "ip.startsWith(\"132.246.\")" not in page
+
+
 def test_save_record(client, temp_dirs):
     ensure_dirs()
     with patch("app.link_up", return_value=True), \
