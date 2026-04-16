@@ -132,3 +132,22 @@ def test_save_record(client, temp_dirs):
         record = json.loads(content.strip())
         assert record["site"] == "TestSite"
         assert record["is_legacy"] is True
+
+def test_save_record_uses_single_live_status_snapshot(client, temp_dirs):
+    ensure_dirs()
+    with patch("app.link_up", side_effect=[True, False]) as link_up_mock,          patch("app.get_ipv4", return_value="132.246.1.100") as get_ipv4_mock:
+        response = client.post("/save", data={
+            "site": "TestSite",
+            "room": "TestRoom",
+            "port_number": "A1"
+        })
+
+    assert response.status_code == 302
+    assert link_up_mock.call_count == 1
+    assert get_ipv4_mock.call_count == 1
+
+    content = RECORDS_PATH.read_text(encoding="utf-8")
+    record = json.loads(content.strip())
+    assert record["eth_link"] is True
+    assert record["ip"] == "132.246.1.100"
+

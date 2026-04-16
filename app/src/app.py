@@ -630,6 +630,19 @@ def get_ipv4(ifname: str) -> str:
 
     return ""
 
+def live_status_snapshot() -> dict:
+    eth_link = link_up(ETH_IFNAME)
+    ip = get_ipv4(ETH_IFNAME) if eth_link else ""
+
+    return {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "pi_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "eth_ifname": ETH_IFNAME,
+        "eth_link": eth_link,
+        "ip": ip,
+        "is_legacy": ip.startswith(TARGET_PREFIX) if ip else False,
+    }
+
 def next_test_id() -> str:
     if not RECORDS_PATH.exists():
         return "T0001"
@@ -660,17 +673,7 @@ def index():
 
 @app.get("/api/status")
 def api_status():
-    eth_link = link_up(ETH_IFNAME)
-    ip = get_ipv4(ETH_IFNAME) if eth_link else ""
-
-    return jsonify({
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "pi_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "eth_ifname": ETH_IFNAME,
-        "eth_link": eth_link,
-        "ip": ip,
-        "is_legacy": ip.startswith(TARGET_PREFIX) if ip else False,
-    })
+    return jsonify(live_status_snapshot())
 
 @app.post("/api/time-sync")
 def time_sync():
@@ -691,7 +694,7 @@ def time_sync():
 @app.post("/save")
 def save_record():
     config = load_config()
-    ip = get_ipv4(ETH_IFNAME) if link_up(ETH_IFNAME) else ""
+    status = live_status_snapshot()
 
     submitted_site = request.form.get("site", "").strip()
     submitted_room = request.form.get("room", "").strip()
@@ -705,10 +708,10 @@ def save_record():
         "room": submitted_room or config.get("room", ""),
         "tc_room": submitted_tc_room or config.get("tc_room", ""),
         "port_number": submitted_port_number,
-        "eth_ifname": ETH_IFNAME,
-        "eth_link": link_up(ETH_IFNAME),
-        "ip": ip,
-        "is_legacy": ip.startswith(TARGET_PREFIX) if ip else False,
+        "eth_ifname": status["eth_ifname"],
+        "eth_link": status["eth_link"],
+        "ip": status["ip"],
+        "is_legacy": status["is_legacy"],
     }
 
     append_record(record)
