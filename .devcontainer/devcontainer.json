@@ -9,6 +9,8 @@
   "service": "fnc-dev",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": false,
   "runArgs": [
     "--security-opt=seccomp=unconfined",
     "--security-opt=apparmor=unconfined"
