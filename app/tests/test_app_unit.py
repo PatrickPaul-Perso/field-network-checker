@@ -1,16 +1,30 @@
-import pytest
-from pathlib import Path
-import app as app_module
+"""Targeted unit tests for the Flask app entry points and helpers."""
+
+# pylint: disable=missing-function-docstring,redefined-outer-name,unused-argument
+
 import json
 import subprocess
-import tempfile
 import sys
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 
+import pytest
+import app as app_module
 from app import (
-    app, load_config, link_up, get_ipv4, next_test_id, append_record,
-    ensure_dirs, DATA_DIR, CONFIG_DIR, RECORDS_PATH, CONFIG_PATH
+    CONFIG_PATH,
+    CONFIG_DIR as APP_CONFIG_DIR,
+    DATA_DIR as APP_DATA_DIR,
+    RECORDS_PATH,
+    app,
+    append_record,
+    ensure_dirs,
+    get_ipv4,
+    link_up,
+    load_config,
+    next_test_id,
 )
+
+DATA_DIR = APP_DATA_DIR
+CONFIG_DIR = APP_CONFIG_DIR
 
 
 @pytest.fixture
@@ -33,7 +47,6 @@ def temp_dirs(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "CONFIG_DIR", config_dir)
     monkeypatch.setattr(module, "RECORDS_PATH", data_dir / "records.jsonl")
     monkeypatch.setattr(module, "CONFIG_PATH", config_dir / "config.json")
-    return
 
 
 def test_load_config_defaults(temp_dirs):
@@ -133,9 +146,13 @@ def test_save_record(client, temp_dirs):
         assert record["site"] == "TestSite"
         assert record["is_legacy"] is True
 
+
 def test_save_record_uses_single_live_status_snapshot(client, temp_dirs):
     ensure_dirs()
-    with patch("app.link_up", side_effect=[True, False]) as link_up_mock,          patch("app.get_ipv4", return_value="132.246.1.100") as get_ipv4_mock:
+    with (
+        patch("app.link_up", side_effect=[True, False]) as link_up_mock,
+        patch("app.get_ipv4", return_value="132.246.1.100") as get_ipv4_mock,
+    ):
         response = client.post("/save", data={
             "site": "TestSite",
             "room": "TestRoom",
@@ -150,4 +167,3 @@ def test_save_record_uses_single_live_status_snapshot(client, temp_dirs):
     record = json.loads(content.strip())
     assert record["eth_link"] is True
     assert record["ip"] == "132.246.1.100"
-
