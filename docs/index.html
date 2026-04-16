@@ -169,6 +169,7 @@
       <p class="subtitle">Local-first network port validation and metadata capture for field work.</p>
       <div class="pill-row">
         <div class="pill">Live Ethernet status</div>
+        <div class="pill">Status unavailable handling</div>
         <div class="pill">IP-based legacy network detection</div>
         <div class="pill">Metadata capture</div>
         <div class="pill">JSONL export</div>
@@ -182,6 +183,7 @@
       <h2>Why this exists</h2>
       <p>When you test a wall port in a building, you need an answer fast. Is the link active, did DHCP respond, and did the port land on the expected network segment?</p>
       <p>Field Network Checker turns that into an immediate visual check, then lets you capture room and port metadata before moving to the next jack.</p>
+      <p>If the app shows <strong>Status unavailable</strong>, the device could not read live status from the host at that moment, which is different from an ordinary link-down result.</p>
     </section>
 
     <section class="section">
@@ -218,6 +220,13 @@
             <p class="card-text">The assigned address matches the target legacy pattern, giving a quick visual confirmation on site.</p>
           </div>
         </article>
+
+        <article class="card">
+          <div class="card-body">
+            <h3 class="card-title">Status unavailable</h3>
+            <p class="card-text">This amber state means the device could not read live Ethernet or IP status from the host. Treat it as a temporary read problem, not the same as link down.</p>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -231,9 +240,10 @@
       <h2>Core workflow</h2>
       <p>1. Connect the device to a wall port.</p>
       <p>2. Watch the live Ethernet state update.</p>
-      <p>3. Confirm whether the assigned IP matches the expected network.</p>
-      <p>4. Enter site, room, telecom room, and port number.</p>
-      <p>5. Save the record and export JSONL for later consolidation.</p>
+      <p>3. If the app shows <strong>Status unavailable</strong>, retry the check or inspect the device and interface state before deciding the wall port is down.</p>
+      <p>4. Confirm whether the assigned IP matches the expected network.</p>
+      <p>5. Enter site, room, telecom room, and port number.</p>
+      <p>6. Save the record and export JSONL for later consolidation.</p>
       <a class="cta" href="https://github.com/PatrickPaul-Perso/field-network-checker/" target="_blank" rel="noopener noreferrer">View project README</a>
       <p class="footer">Built for practical field validation, low friction testing, and traceable metadata capture.</p>
     </section>

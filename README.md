@@ -20,7 +20,7 @@ This project turns those checks into a small, direct workflow with immediate vis
 ## What it does
 
 - Monitors live Ethernet status
-- Shows link down, link up with no IP, link up on a non-target network, and link up on the target legacy network
+- Shows link down, status unavailable, link up with no IP, link up on a non-target network, and link up on the target legacy network
 - Highlights target-network detection from the assigned IP
 - Captures site, room, telecom room, and port number
 - Saves records locally and exports JSONL for later consolidation
@@ -28,6 +28,8 @@ This project turns those checks into a small, direct workflow with immediate vis
 ## Why local-first matters
 
 The tool is designed for field work. It stays useful even before any central system integration. It gives the technician an immediate answer at the wall jack, then preserves the metadata for later import or reporting.
+
+`Link down` means there is no active Ethernet link. `Status unavailable` means the device could not read live status from the host at that moment, so the operator should retry or check the device state instead of assuming the wall port is down.
 
 ## Interface preview
 
@@ -42,6 +44,9 @@ The tool is designed for field work. It stays useful even before any central sys
 
 ### Link up, target legacy network
 <img src="docs/assets/images/link_up_legacy_ip.JPG" alt="Link up on legacy IP" width="320">
+
+### Status unavailable
+No screenshot is published yet for this state. When the app shows `Status unavailable`, it means the device could not read live Ethernet or IP status from the host and the operator should retry or check the device before treating the port as down.
 
 ## Public project page
 
@@ -67,7 +72,7 @@ The intended host model is:
 - NetworkManager-managed hotspot setup for the field access point
 - Docker Compose for the web app runtime
 
-The main host-side playbook is [ansible/site.yml](/workspaces/field-network-checker/ansible/site.yml), and the current app deployment tasks live in [ansible/roles/app/tasks/main.yml](/workspaces/field-network-checker/ansible/roles/app/tasks/main.yml).
+The main host-side playbook is [ansible/site.yml](ansible/site.yml), and the current app deployment tasks live in [ansible/roles/app/tasks/main.yml](ansible/roles/app/tasks/main.yml).
 
 ## Host test flow
 
