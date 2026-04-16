@@ -487,7 +487,15 @@ PAGE = """
 
     async function refreshStatus() {
       try {
-        const response = await fetch("/api/status", { cache: "no-store" });
+        const statusUrl = new URL("/api/status", window.location.origin);
+        const pageParams = new URLSearchParams(window.location.search);
+        const demoStatus = pageParams.get("demo_status");
+
+        if (demoStatus) {
+          statusUrl.searchParams.set("demo_status", demoStatus);
+        }
+
+        const response = await fetch(statusUrl, { cache: "no-store" });
         const data = await response.json();
 
         const linkUp = data.eth_link === true;
@@ -685,6 +693,22 @@ def get_ipv4(ifname: str) -> str:
         return ""
 
 
+def demo_status_snapshot(mode: str) -> dict | None:
+    """Return a demo status payload for UI screenshots when requested."""
+    if mode != "unavailable":
+        return None
+
+    return {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "pi_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "eth_ifname": ETH_IFNAME,
+        "eth_link": False,
+        "ip": "",
+        "is_legacy": False,
+        "status_error": "Unable to read live Ethernet status.",
+    }
+
+
 def live_status_snapshot() -> dict:
     """Build the current live status payload used by the UI and save flow."""
     status_error = ""
@@ -746,6 +770,10 @@ def index():
 @app.get("/api/status")
 def api_status():
     """Return the current live Ethernet status payload as JSON."""
+    demo_status = request.args.get("demo_status", "").strip().lower()
+    demo_snapshot = demo_status_snapshot(demo_status)
+    if demo_snapshot is not None:
+        return jsonify(demo_snapshot)
     return jsonify(live_status_snapshot())
 
 @app.post("/api/time-sync")

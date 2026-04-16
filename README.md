@@ -46,7 +46,9 @@ The tool is designed for field work. It stays useful even before any central sys
 <img src="docs/assets/images/link_up_legacy_ip.JPG" alt="Link up on legacy IP" width="320">
 
 ### Status unavailable
-No screenshot is published yet for this state. When the app shows `Status unavailable`, it means the device could not read live Ethernet or IP status from the host and the operator should retry or check the device before treating the port as down.
+<img src="docs/assets/images/link_unavailable.JPG" alt="Status unavailable" width="320">
+
+When the app shows `Status unavailable`, it means the device could not read live Ethernet or IP status from the host and the operator should retry or check the device before treating the port as down.
 
 ## Public project page
 

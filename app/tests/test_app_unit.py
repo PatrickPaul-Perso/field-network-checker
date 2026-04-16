@@ -16,6 +16,7 @@ from app import (
     RECORDS_PATH,
     app,
     append_record,
+    demo_status_snapshot,
     ensure_dirs,
     get_ipv4,
     link_up,
@@ -138,6 +139,17 @@ def test_live_status_snapshot_handles_ip_read_failure(temp_dirs):
     assert status["status_error"] == "Unable to read live IP address."
 
 
+def test_demo_status_snapshot_unavailable_mode(temp_dirs):
+    """The demo unavailable mode should build the amber status payload."""
+    status = demo_status_snapshot("unavailable")
+
+    assert status is not None
+    assert status["eth_link"] is False
+    assert status["ip"] == ""
+    assert status["is_legacy"] is False
+    assert status["status_error"] == "Unable to read live Ethernet status."
+
+
 def test_next_test_id_empty(temp_dirs):
     """next_test_id should start at T0001 when no records exist yet."""
     ensure_dirs()
@@ -182,6 +194,21 @@ def test_api_status_no_link(client, temp_dirs):
         assert data["ip"] == ""
         assert data["status_error"] == ""
         read_ipv4_mock.assert_not_called()
+
+
+def test_api_status_demo_unavailable_bypasses_live_reads(client, temp_dirs):
+    """The demo unavailable mode should return the amber payload without host reads."""
+    with patch("app.read_link_up") as read_link_up_mock, \
+         patch("app.read_ipv4") as read_ipv4_mock:
+        response = client.get("/api/status?demo_status=unavailable")
+
+    data = response.get_json()
+    assert data["eth_link"] is False
+    assert data["ip"] == ""
+    assert data["is_legacy"] is False
+    assert data["status_error"] == "Unable to read live Ethernet status."
+    read_link_up_mock.assert_not_called()
+    read_ipv4_mock.assert_not_called()
 
 
 def test_index_uses_backend_status_fields(client, temp_dirs):
