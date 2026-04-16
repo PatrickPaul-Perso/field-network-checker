@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /opt/field-network-checker/ansible
-sudo ansible-playbook -i inventory/localhost.ini site.yml
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "${REPO_ROOT}/ansible"
+ansible-playbook -i inventory/localhost.ini site.yml

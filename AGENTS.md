@@ -20,8 +20,8 @@ Prefer changes that are:
 Update this section to match the real project structure.
 
 - Build book uses ansible all under: `ansible`
-- Main application entry: `app.py`
-- Docker and local run files: `compose.yaml`, `Dockerfile`
+- Main application entry: `app/src/app.py`
+- Docker and local run files: `deploy/compose.yaml`, `app/Dockerfile`
 - Project documentation and agent context: `ai/`
 - Skills: `.agents/skills/`
 - Tests: `app/tests/`, `app/run_tests.py`
@@ -53,6 +53,7 @@ If the task needs role-specific framing, use:
 - Do not invent new architecture when an existing pattern already fits.
 - Keep field behavior explicit. Avoid hidden logic.
 - Preserve local-first operation unless the task explicitly requires otherwise.
+- Keep Ansible privilege escalation narrow. Prefer task-level or role-level `become` only for OS-facing changes.
 - When behavior changes, update docs and tests where relevant.
 - When a trade-off exists, prefer reliability and clarity over cleverness.
 
@@ -143,12 +144,14 @@ Typical validation areas:
 - lint or format checks pass if configured
 
 Project commands:
-- bootstrap the installation using ansible: `ansible-playbook ansible/site.yml --syntax-check; ansible-playbook ansible/site.yml`
-- Build the app runtime container: `docker compose -f deploy/compose.yaml build`
-- Run app: `docker compose -f deploy/compose.yaml up -d`
-- Verify the app is running: `docker compose -f deploy/compose.yaml ps`
+- bootstrap the installation using ansible from the checked-out repo: `cd /path/to/field-network-checker/ansible && ansible-playbook site.yml --syntax-check && ansible-playbook site.yml`
+- Build the app runtime container: `cd /path/to/field-network-checker && docker compose -f deploy/compose.yaml build`
+- Run app: `cd /path/to/field-network-checker && docker compose -f deploy/compose.yaml up -d`
+- Verify the app is running: `cd /path/to/field-network-checker && docker compose -f deploy/compose.yaml ps`
 - Further verify the app outputs logs: `docker logs fnc-app --tail 50`
 - Test by calling: curl http://192.168.50.1:8080/api/status
+
+For host deployment, run `ansible-playbook` as a regular user. The playbook should escalate only where the host OS needs it, and the runtime state under `/opt/field-network-checker` should remain owned by the invoking user.
 
 If a command cannot be run in the current environment, state that clearly and describe what remains unverified.
 

@@ -1,9 +1,11 @@
-fnc_user: fnc
-fnc_project_root: "{{ playbook_dir | dirname }}"
-fnc_compose_file: "{{ fnc_project_root }}/deploy/compose.yaml"
-fnc_data_dir: "{{ fnc_project_root }}/data"
-fnc_config_dir: "{{ fnc_project_root }}/config"
-fnc_default_config_src: "{{ fnc_project_root }}/config/config.json"
+fnc_invoking_user: "{{ ansible_env.SUDO_USER | default(ansible_user_id, true) }}"
+fnc_source_root: "{{ playbook_dir | dirname }}"
+fnc_runtime_root: /opt/field-network-checker
+fnc_source_app_dir: "{{ fnc_source_root }}/app"
+fnc_source_compose_file: "{{ fnc_source_root }}/deploy/compose.yaml"
+fnc_source_default_config_src: "{{ fnc_source_root }}/config/config.json"
+fnc_data_dir: "{{ fnc_runtime_root }}/data"
+fnc_config_dir: "{{ fnc_runtime_root }}/config"
 
 netprobe_ap_conn_name: fnc-ap
 netprobe_ap_ifname: wlan0

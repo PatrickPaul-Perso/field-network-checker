@@ -789,7 +789,7 @@ def time_sync():
         parsed = datetime.fromisoformat(browser_time.replace("Z", "+00:00"))
         local_value = parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S")
         subprocess.run(
-            ["date", "-s", local_value],
+            ["sudo", "date", "-s", local_value],
             check=True,
             capture_output=True,
             text=True,

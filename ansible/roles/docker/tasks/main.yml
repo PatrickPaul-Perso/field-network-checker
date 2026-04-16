@@ -11,7 +11,6 @@
     done
   args:
     executable: /bin/bash
-  become: true
 
 - name: Create apt keyrings directory
   file:
@@ -53,11 +52,11 @@
 
 - name: Add bootstrap user to docker group
   user:
-    name: "{{ fnc_user | default('fnc') }}"
+    name: "{{ fnc_invoking_user }}"
     groups: docker
     append: true
     state: present
 
 - name: Note about docker group membership for bootstrap user
   debug:
-    msg: "User {{ fnc_user | default('fnc') }} added to docker group. You may need to log out and back in for group membership to take effect, or run 'newgrp docker' in a new shell."
+    msg: "User {{ fnc_invoking_user }} added to docker group. You may need to log out and back in for group membership to take effect, or run 'newgrp docker' in a new shell."

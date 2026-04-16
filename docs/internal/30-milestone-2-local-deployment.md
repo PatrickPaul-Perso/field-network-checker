@@ -32,6 +32,7 @@ The intended deployment model is:
 
 - Raspberry Pi host running Raspberry Pi OS
 - local Ansible execution against `localhost`
+- Ansible invoked from the checked-out repository on the host
 - Docker Engine and Docker Compose plugin installed on the host
 - NetworkManager managing the access point connection
 - Flask app running as `fnc-app` through Docker Compose
@@ -41,13 +42,23 @@ The intended deployment model is:
 
 The `app` role is responsible for:
 
+- ensuring the staged runtime root exists at `/opt/field-network-checker`
 - ensuring the runtime `data` directory exists
 - ensuring the runtime `config` directory exists
 - seeding `config.json` when it is missing
-- confirming the Docker Compose file is present
+- confirming the source Docker Compose file is present in the checked-out repository
+- building and running the app directly from the checked-out repository
 - running `docker compose up -d --build fnc-app`
 
-The role uses shared variables from `ansible/group_vars/all.yml` so it can work from the checked-out repository layout rather than relying on extra hardcoded deployment paths.
+The role uses shared variables from `ansible/group_vars/all.yml` to keep a minimal host runtime tree under `/opt/field-network-checker` while running Docker Compose from the checked-out repository.
+
+The intended privilege split is:
+
+- run `ansible-playbook` from the checked-out repository as a regular user
+- use privilege escalation only for host-level changes such as package install, service changes, NetworkManager configuration, and creating the runtime root under `/opt`
+- keep the runtime tree owned by the invoking user
+- keep only the runtime directories under `/opt/field-network-checker`
+- run the Flask app container as a regular user, while preserving the `SYS_TIME` capability for time updates
 
 ## Access Point Role
 
@@ -68,6 +79,7 @@ This keeps the access point configuration on the host, while leaving the applica
 The intended host-side validation flow for this milestone is:
 
 ```bash
+cd /path/to/field-network-checker
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --tags app
 docker compose -f deploy/compose.yaml ps
@@ -75,7 +87,7 @@ docker logs fnc-app --tail 50
 curl http://192.168.50.1:8080/api/status
 ```
 
-These commands are recorded here as the expected Raspberry Pi validation path.
+These commands are recorded here as the expected Raspberry Pi validation path. The Ansible commands and Compose file stay in the repository checkout, while the app runtime data lives under `/opt/field-network-checker`.
 
 ## Outcome
 

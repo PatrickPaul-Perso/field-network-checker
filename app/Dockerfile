@@ -12,7 +12,7 @@ RUN apt-get update \
     && sed -i "s/^#alias ll='ls -l'$/alias ll='ls -l'/" /etc/skel/.bashrc \
     && groupadd --gid ${USER_GID} ${USERNAME} \
     && useradd --uid ${USER_UID} --gid ${USER_GID} -m -s /bin/bash ${USERNAME} \
-    && echo "${USERNAME} ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
+    && echo "${USERNAME} ALL=(root) NOPASSWD:/usr/bin/date" > /etc/sudoers.d/${USERNAME} \
     && chmod 0440 /etc/sudoers.d/${USERNAME} \
     && rm -rf /var/lib/apt/lists/*
 

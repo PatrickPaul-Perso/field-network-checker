@@ -1,12 +1,14 @@
 - name: Build Field Network Checker locally
   hosts: local
-  become: true
   roles:
     - role: base
       tags: base
+      become: true
     - role: docker
       tags: docker
+      become: true
     - role: network_ap
       tags: network_ap
+      become: true
     - role: app
       tags: app

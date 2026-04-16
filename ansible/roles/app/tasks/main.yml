@@ -1,12 +1,63 @@
 ---
+- name: Resolve invoking user primary group
+  ansible.builtin.command:
+    argv:
+      - id
+      - -gn
+      - "{{ fnc_invoking_user }}"
+  register: fnc_runtime_group_lookup
+  changed_when: false
+
+- name: Resolve invoking user UID
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ fnc_invoking_user }}"
+  register: fnc_runtime_uid_lookup
+  changed_when: false
+
+- name: Resolve invoking user GID
+  ansible.builtin.command:
+    argv:
+      - id
+      - -g
+      - "{{ fnc_invoking_user }}"
+  register: fnc_runtime_gid_lookup
+  changed_when: false
+
 - name: Ensure app runtime directories exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
+    owner: "{{ fnc_invoking_user }}"
+    group: "{{ fnc_runtime_group_lookup.stdout }}"
     mode: "0755"
+  become: true
   loop:
+    - "{{ fnc_runtime_root }}"
     - "{{ fnc_data_dir }}"
     - "{{ fnc_config_dir }}"
+
+- name: Verify app source directory exists
+  ansible.builtin.stat:
+    path: "{{ fnc_source_app_dir }}"
+  register: fnc_source_app
+
+- name: Fail when app source directory is missing
+  ansible.builtin.fail:
+    msg: "Expected app source directory at {{ fnc_source_app_dir }}."
+  when: not fnc_source_app.stat.exists
+
+- name: Verify app source compose file exists
+  ansible.builtin.stat:
+    path: "{{ fnc_source_compose_file }}"
+  register: fnc_source_compose
+
+- name: Fail when app source compose file is missing
+  ansible.builtin.fail:
+    msg: "Expected source Docker Compose file at {{ fnc_source_compose_file }}."
+  when: not fnc_source_compose.stat.exists
 
 - name: Check whether app default config already exists
   ansible.builtin.stat:
@@ -15,38 +66,65 @@
 
 - name: Seed default app config when missing
   ansible.builtin.copy:
-    src: "{{ fnc_default_config_src }}"
+    src: "{{ fnc_source_default_config_src }}"
     dest: "{{ fnc_config_dir }}/config.json"
     remote_src: true
     mode: "0644"
   when: not fnc_app_config.stat.exists
 
-- name: Verify app compose file exists
-  ansible.builtin.stat:
-    path: "{{ fnc_compose_file }}"
-  register: fnc_compose
+- name: Ensure runtime tree ownership matches invoking user
+  ansible.builtin.file:
+    path: "{{ fnc_runtime_root }}"
+    state: directory
+    owner: "{{ fnc_invoking_user }}"
+    group: "{{ fnc_runtime_group_lookup.stdout }}"
+    recurse: true
+  become: true
 
-- name: Fail when app compose file is missing
-  ansible.builtin.fail:
-    msg: "Expected Docker Compose file at {{ fnc_compose_file }}."
-  when: not fnc_compose.stat.exists
-
-- name: Build and start Field Network Checker app
+- name: Build Field Network Checker app image
   ansible.builtin.command:
     argv:
       - docker
       - compose
       - -f
-      - "{{ fnc_compose_file }}"
+      - "{{ fnc_source_compose_file }}"
+      - --project-directory
+      - "{{ fnc_source_root }}"
+      - build
+      - fnc-app
+    chdir: "{{ fnc_source_root }}"
+  environment:
+    FNC_RUNTIME_ROOT: "{{ fnc_runtime_root }}"
+    FNC_SOURCE_APP_DIR: "{{ fnc_source_app_dir }}"
+    FNC_RUNTIME_USER: "{{ fnc_invoking_user }}"
+    FNC_RUNTIME_UID: "{{ fnc_runtime_uid_lookup.stdout }}"
+    FNC_RUNTIME_GID: "{{ fnc_runtime_gid_lookup.stdout }}"
+  register: fnc_app_compose_build
+  changed_when: >
+    'Building' in fnc_app_compose_build.stdout or
+    'Pulling' in fnc_app_compose_build.stdout
+
+- name: Start Field Network Checker app
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ fnc_source_compose_file }}"
+      - --project-directory
+      - "{{ fnc_source_root }}"
       - up
       - -d
-      - --build
       - fnc-app
-    chdir: "{{ fnc_project_root }}"
+    chdir: "{{ fnc_source_root }}"
+  environment:
+    FNC_RUNTIME_ROOT: "{{ fnc_runtime_root }}"
+    FNC_SOURCE_APP_DIR: "{{ fnc_source_app_dir }}"
+    FNC_RUNTIME_USER: "{{ fnc_invoking_user }}"
+    FNC_RUNTIME_UID: "{{ fnc_runtime_uid_lookup.stdout }}"
+    FNC_RUNTIME_GID: "{{ fnc_runtime_gid_lookup.stdout }}"
   register: fnc_app_compose_up
   changed_when: >
     'Creating' in fnc_app_compose_up.stdout or
     'Recreating' in fnc_app_compose_up.stdout or
-    'Starting' in fnc_app_compose_up.stdout or
-    'Building' in fnc_app_compose_up.stdout or
-    'Pulling' in fnc_app_compose_up.stdout
+    'Starting' in fnc_app_compose_up.stdout

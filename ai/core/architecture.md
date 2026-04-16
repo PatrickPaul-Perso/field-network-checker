@@ -27,7 +27,7 @@ Expected responsibilities:
 - persist config and readings if supported
 
 Typical files:
-- `app.py`
+- `app/src/app.py`
 - helpers under a backend or utilities module
 - config or persistence modules
 
