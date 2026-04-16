@@ -131,6 +131,11 @@ PAGE = """
       box-shadow: 0 0 0 8px rgba(21, 128, 61, 0.12);
     }
 
+    .dot.warn {
+      background: #b45309;
+      box-shadow: 0 0 0 8px rgba(180, 83, 9, 0.12);
+    }
+
     .live-status-card {
       display: flex;
       align-items: center;
@@ -185,6 +190,10 @@ PAGE = """
       color: var(--bad);
     }
 
+    .live-status-text.warn {
+      color: #b45309;
+    }
+
     .live-status-meta {
       display: flex;
       flex-wrap: wrap;
@@ -200,6 +209,17 @@ PAGE = """
       font-size: 0.98rem;
       font-weight: 600;
       word-break: break-word;
+    }
+
+    .status-note {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 0.92rem;
+      font-weight: 600;
     }
 
     .live-status-right {
@@ -363,6 +383,7 @@ PAGE = """
               <span id="ifname" class="live-status-pill">eth0</span>
               <span id="ip" class="live-status-pill">-</span>
             </div>
+            <div id="status-note" class="status-note" style="display:none;">Status temporarily unavailable.</div>
           </div>
         </div>
       </div>
@@ -470,24 +491,32 @@ PAGE = """
         const linkUp = data.eth_link === true;
         const ip = data.ip || "";
         const ipMatch = data.is_legacy === true;
+        const statusError = data.status_error || "";
+        const statusUnavailable = statusError !== "";
 
         const card = document.getElementById("live-status-card");
         const dot = document.getElementById("status-dot");
         const text = document.getElementById("status-text");
         const ifname = document.getElementById("ifname");
         const ipField = document.getElementById("ip");
+        const statusNote = document.getElementById("status-note");
 
         if (card) {
           card.className = ipMatch ? "live-status-card prefix-match" : "live-status-card";
         }
 
         if (dot) {
-          dot.className = linkUp ? "dot ok" : "dot";
+          dot.className = statusUnavailable ? "dot warn" : (linkUp ? "dot ok" : "dot");
         }
 
         if (text) {
-          text.className = linkUp ? "live-status-text ok" : "live-status-text bad";
-          text.textContent = linkUp ? "Link up" : "Link down";
+          if (statusUnavailable) {
+            text.className = "live-status-text warn";
+            text.textContent = "Status unavailable";
+          } else {
+            text.className = linkUp ? "live-status-text ok" : "live-status-text bad";
+            text.textContent = linkUp ? "Link up" : "Link down";
+          }
         }
 
         if (ifname) {
@@ -496,6 +525,11 @@ PAGE = """
 
         if (ipField) {
           ipField.textContent = ip || "-";
+        }
+
+        if (statusNote) {
+          statusNote.textContent = statusError;
+          statusNote.style.display = statusUnavailable ? "block" : "none";
         }
 
         const piTime = document.getElementById("pi-time");
@@ -607,23 +641,25 @@ def load_config() -> dict:
 
     return merged
 
-def link_up(ifname: str) -> bool:
+def read_link_up(ifname: str) -> bool:
     carrier = Path(f"/sys/class/net/{ifname}/carrier")
+    if not carrier.exists():
+        return False
+    return carrier.read_text(encoding="utf-8").strip() == "1"
+
+
+def link_up(ifname: str) -> bool:
     try:
-        if not carrier.exists():
-            return False
-        return carrier.read_text(encoding="utf-8").strip() == "1"
+        return read_link_up(ifname)
     except OSError:
         return False
 
-def get_ipv4(ifname: str) -> str:
-    try:
-        output = subprocess.check_output(
-            ["ip", "-4", "-o", "addr", "show", "dev", ifname],
-            text=True
-        )
-    except (subprocess.CalledProcessError, OSError):
-        return ""
+
+def read_ipv4(ifname: str) -> str:
+    output = subprocess.check_output(
+        ["ip", "-4", "-o", "addr", "show", "dev", ifname],
+        text=True
+    )
 
     for line in output.splitlines():
         parts = line.split()
@@ -633,9 +669,29 @@ def get_ipv4(ifname: str) -> str:
 
     return ""
 
+
+def get_ipv4(ifname: str) -> str:
+    try:
+        return read_ipv4(ifname)
+    except (subprocess.CalledProcessError, OSError):
+        return ""
+
+
 def live_status_snapshot() -> dict:
-    eth_link = link_up(ETH_IFNAME)
-    ip = get_ipv4(ETH_IFNAME) if eth_link else ""
+    status_error = ""
+
+    try:
+        eth_link = read_link_up(ETH_IFNAME)
+    except OSError:
+        eth_link = False
+        status_error = "Unable to read live Ethernet status."
+
+    ip = ""
+    if not status_error and eth_link:
+        try:
+            ip = read_ipv4(ETH_IFNAME)
+        except (subprocess.CalledProcessError, OSError):
+            status_error = "Unable to read live IP address."
 
     return {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -644,6 +700,7 @@ def live_status_snapshot() -> dict:
         "eth_link": eth_link,
         "ip": ip,
         "is_legacy": ip.startswith(TARGET_PREFIX) if ip else False,
+        "status_error": status_error,
     }
 
 def next_test_id() -> str:

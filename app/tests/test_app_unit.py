@@ -22,6 +22,7 @@ from app import (
     live_status_snapshot,
     load_config,
     next_test_id,
+    read_ipv4,
 )
 
 DATA_DIR = APP_DATA_DIR
@@ -92,14 +93,37 @@ def test_get_ipv4_command_failure_returns_empty_string(temp_dirs):
         assert get_ipv4("eth0") == ""
 
 
+def test_read_ipv4_success(temp_dirs):
+    output = "2: eth0    inet 10.0.0.25/24 brd 10.0.0.255 scope global dynamic eth0\n"
+    with patch("subprocess.check_output", return_value=output):
+        assert read_ipv4("eth0") == "10.0.0.25"
+
+
 def test_live_status_snapshot_handles_link_read_failure(temp_dirs):
-    with patch("pathlib.Path.exists", return_value=True),          patch("pathlib.Path.read_text", side_effect=OSError),          patch("app.get_ipv4") as get_ipv4_mock:
+    with (
+        patch("app.read_link_up", side_effect=OSError),
+        patch("app.read_ipv4") as read_ipv4_mock,
+    ):
         status = live_status_snapshot()
 
     assert status["eth_link"] is False
     assert status["ip"] == ""
     assert status["is_legacy"] is False
-    get_ipv4_mock.assert_not_called()
+    assert status["status_error"] == "Unable to read live Ethernet status."
+    read_ipv4_mock.assert_not_called()
+
+
+def test_live_status_snapshot_handles_ip_read_failure(temp_dirs):
+    with (
+        patch("app.read_link_up", return_value=True),
+        patch("app.read_ipv4", side_effect=FileNotFoundError),
+    ):
+        status = live_status_snapshot()
+
+    assert status["eth_link"] is True
+    assert status["ip"] == ""
+    assert status["is_legacy"] is False
+    assert status["status_error"] == "Unable to read live IP address."
 
 
 def test_next_test_id_empty(temp_dirs):
@@ -122,35 +146,40 @@ def test_append_record(temp_dirs):
 
 
 def test_api_status_link_up(client, temp_dirs):
-    with patch("app.link_up", return_value=True), \
-         patch("app.get_ipv4", return_value="192.168.1.100"):
+    with patch("app.read_link_up", return_value=True), \
+         patch("app.read_ipv4", return_value="192.168.1.100"):
         response = client.get("/api/status")
         data = response.get_json()
         assert data["eth_link"] is True
         assert data["ip"] == "192.168.1.100"
         assert data["is_legacy"] is False
+        assert data["status_error"] == ""
 
 
 def test_api_status_no_link(client, temp_dirs):
-    with patch("app.link_up", return_value=False), \
-         patch("app.get_ipv4", return_value=""):
+    with patch("app.read_link_up", return_value=False), \
+         patch("app.read_ipv4") as read_ipv4_mock:
         response = client.get("/api/status")
         data = response.get_json()
         assert data["eth_link"] is False
         assert data["ip"] == ""
+        assert data["status_error"] == ""
+        read_ipv4_mock.assert_not_called()
 
 
-def test_index_uses_backend_is_legacy_flag(client, temp_dirs):
+def test_index_uses_backend_status_fields(client, temp_dirs):
     response = client.get("/")
     page = response.get_data(as_text=True)
     assert "const ipMatch = data.is_legacy === true;" in page
+    assert 'const statusError = data.status_error || "";' in page
+    assert "Status unavailable" in page
     assert "ip.startsWith(\"132.246.\")" not in page
 
 
 def test_save_record(client, temp_dirs):
     ensure_dirs()
-    with patch("app.link_up", return_value=True), \
-         patch("app.get_ipv4", return_value="132.246.1.100"):
+    with patch("app.read_link_up", return_value=True), \
+         patch("app.read_ipv4", return_value="132.246.1.100"):
         response = client.post("/save", data={
             "site": "TestSite",
             "room": "TestRoom",
@@ -166,8 +195,8 @@ def test_save_record(client, temp_dirs):
 def test_save_record_uses_single_live_status_snapshot(client, temp_dirs):
     ensure_dirs()
     with (
-        patch("app.link_up", side_effect=[True, False]) as link_up_mock,
-        patch("app.get_ipv4", return_value="132.246.1.100") as get_ipv4_mock,
+        patch("app.read_link_up", side_effect=[True, False]) as link_up_mock,
+        patch("app.read_ipv4", return_value="132.246.1.100") as get_ipv4_mock,
     ):
         response = client.post("/save", data={
             "site": "TestSite",
