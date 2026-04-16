@@ -1,3 +1,5 @@
+"""Field Network Checker Flask app and live Ethernet status helpers."""
+
 from datetime import datetime
 import json
 import os
@@ -608,10 +610,12 @@ PAGE = """
 """
 
 def ensure_dirs() -> None:
+    """Create the data and config directories when they are missing."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 def load_config() -> dict:
+    """Load saved defaults and recreate the config file if it is missing or invalid."""
     ensure_dirs()
 
     default = {
@@ -642,6 +646,7 @@ def load_config() -> dict:
     return merged
 
 def read_link_up(ifname: str) -> bool:
+    """Read the raw carrier state for an interface from sysfs."""
     carrier = Path(f"/sys/class/net/{ifname}/carrier")
     if not carrier.exists():
         return False
@@ -649,6 +654,7 @@ def read_link_up(ifname: str) -> bool:
 
 
 def link_up(ifname: str) -> bool:
+    """Return a safe best-effort link state for an interface."""
     try:
         return read_link_up(ifname)
     except OSError:
@@ -656,6 +662,7 @@ def link_up(ifname: str) -> bool:
 
 
 def read_ipv4(ifname: str) -> str:
+    """Read the raw IPv4 address currently assigned to an interface."""
     output = subprocess.check_output(
         ["ip", "-4", "-o", "addr", "show", "dev", ifname],
         text=True
@@ -671,6 +678,7 @@ def read_ipv4(ifname: str) -> str:
 
 
 def get_ipv4(ifname: str) -> str:
+    """Return a safe best-effort IPv4 address for an interface."""
     try:
         return read_ipv4(ifname)
     except (subprocess.CalledProcessError, OSError):
@@ -678,6 +686,7 @@ def get_ipv4(ifname: str) -> str:
 
 
 def live_status_snapshot() -> dict:
+    """Build the current live status payload used by the UI and save flow."""
     status_error = ""
 
     try:
@@ -704,6 +713,7 @@ def live_status_snapshot() -> dict:
     }
 
 def next_test_id() -> str:
+    """Return the next sequential test identifier for a new saved record."""
     if not RECORDS_PATH.exists():
         return "T0001"
 
@@ -716,12 +726,14 @@ def next_test_id() -> str:
     return f"T{count + 1:04d}"
 
 def append_record(record: dict) -> None:
+    """Append a single saved field record to the JSONL log."""
     ensure_dirs()
     with RECORDS_PATH.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 @app.get("/")
 def index():
+    """Render the main application page with saved defaults and status UI."""
     config = load_config()
     return render_template_string(
         PAGE,
@@ -733,10 +745,12 @@ def index():
 
 @app.get("/api/status")
 def api_status():
+    """Return the current live Ethernet status payload as JSON."""
     return jsonify(live_status_snapshot())
 
 @app.post("/api/time-sync")
 def time_sync():
+    """Update the device clock from the browser-provided timestamp."""
     payload = request.get_json(silent=True) or {}
     browser_time = payload.get("browser_time", "").strip()
 
@@ -746,13 +760,21 @@ def time_sync():
     try:
         parsed = datetime.fromisoformat(browser_time.replace("Z", "+00:00"))
         local_value = parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S")
-        subprocess.run(["date", "-s", local_value], check=True, capture_output=True, text=True)
+        subprocess.run(
+            ["date", "-s", local_value],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
         return jsonify({"ok": True, "message": f"Pi time updated to {local_value}."})
-    except Exception:
-        return jsonify({"ok": False, "message": "Unable to update Pi time from this container."}), 500
+    except (ValueError, OSError, subprocess.SubprocessError):
+        return jsonify(
+            {"ok": False, "message": "Unable to update Pi time from this container."},
+        ), 500
 
 @app.post("/save")
 def save_record():
+    """Save the current form values together with one live status snapshot."""
     config = load_config()
     status = live_status_snapshot()
 
@@ -797,6 +819,7 @@ def save_record():
 
 @app.get("/download/jsonl")
 def download_jsonl():
+    """Download the saved JSONL records file, creating it if needed."""
     ensure_dirs()
     if not RECORDS_PATH.exists():
         RECORDS_PATH.write_text("", encoding="utf-8")
@@ -804,10 +827,12 @@ def download_jsonl():
 
 @app.get("/health")
 def health():
+    """Return a simple health response for container and service checks."""
     return "ok\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 @app.post("/config/save")
 def save_config():
+    """Save the operator's default site and room values."""
     ensure_dirs()
 
     config = {
